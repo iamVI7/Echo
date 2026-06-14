@@ -18,6 +18,7 @@ export default function Vault() {
   const [activeTab, setActiveTab] = useState('all');
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  const [categoryOpen, setCategoryOpen] = useState(false);
 
   useEffect(() => {
     echoService.getAll()
@@ -25,10 +26,6 @@ export default function Vault() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
-
-  const usedCategories = categories.filter(cat =>
-    echoes.some(e => e.category === cat)
-  );
 
   const filtered = echoes.filter(e => {
     if (activeTab !== 'all' && computeStatus(e) !== activeTab) return false;
@@ -59,7 +56,7 @@ export default function Vault() {
       <h1 className="font-display text-3xl font-medium text-ink-900 mb-6">Vault</h1>
 
       {/* Tabs */}
-      <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1 -mx-1 px-1">
+      <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
         {tabs.map(tab => (
           <button
             key={tab.key}
@@ -103,34 +100,68 @@ export default function Vault() {
         )}
       </div>
 
-      {/* Category filter */}
-      {usedCategories.length > 0 && (
-        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1 -mx-1 px-1">
+      {/* Category filter dropdown */}
+      <div className="relative mb-6">
           <button
-            onClick={() => setActiveCategory('all')}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-mono border transition-all duration-150 ${
+            onClick={() => setCategoryOpen(o => !o)}
+            className={`flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all duration-150 w-full sm:w-auto ${
               activeCategory === 'all'
-                ? 'bg-ink-800 text-warm-50 border-ink-800'
-                : 'bg-white text-[var(--text-muted)] border-[var(--border)]'
+                ? 'bg-white text-ink-700 border-[var(--border)]'
+                : `${categoryColors[activeCategory] || categoryColors.Other}`
             }`}
           >
-            All categories
-          </button>
-          {usedCategories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-mono border transition-all duration-150 ${
-                activeCategory === cat
-                  ? 'bg-ink-800 text-warm-50 border-ink-800'
-                  : `${categoryColors[cat] || categoryColors.Other}`
-              }`}
+            <span className="flex items-center gap-2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M3 4H21L14 12.5V19L10 21V12.5L3 4Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+              </svg>
+              {activeCategory === 'all' ? 'All categories' : activeCategory}
+            </span>
+            <svg
+              width="14" height="14" viewBox="0 0 24 24" fill="none"
+              className={`transition-transform duration-150 ${categoryOpen ? 'rotate-180' : ''}`}
             >
-              {cat}
-            </button>
-          ))}
+              <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+
+          {categoryOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-10"
+                onClick={() => setCategoryOpen(false)}
+              />
+              <div className="absolute top-full left-0 mt-1.5 w-full sm:w-56 bg-white border border-[var(--border)] rounded-xl shadow-lg shadow-ink-900/5 py-1.5 z-20 animate-fade-up max-h-64 overflow-y-auto">
+                <button
+                  onClick={() => { setActiveCategory('all'); setCategoryOpen(false); }}
+                  className={`w-full text-left px-4 py-2 text-sm transition-colors duration-100 flex items-center justify-between ${
+                    activeCategory === 'all' ? 'text-ink-900 font-medium bg-[var(--bg-secondary)]' : 'text-ink-700 hover:bg-[var(--bg-secondary)]'
+                  }`}
+                >
+                  All categories
+                  <span className="text-xs font-mono text-[var(--text-muted)]">{echoes.length}</span>
+                </button>
+                {categories.map(cat => {
+                  const count = echoes.filter(e => e.category === cat).length;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => { setActiveCategory(cat); setCategoryOpen(false); }}
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors duration-100 flex items-center justify-between ${
+                        activeCategory === cat ? 'text-ink-900 font-medium bg-[var(--bg-secondary)]' : 'text-ink-700 hover:bg-[var(--bg-secondary)]'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${(categoryColors[cat] || categoryColors.Other).split(' ')[0]}`} />
+                        {cat}
+                      </span>
+                      <span className="text-xs font-mono text-[var(--text-muted)]">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
-      )}
 
       {loading ? (
         <div className="space-y-3">

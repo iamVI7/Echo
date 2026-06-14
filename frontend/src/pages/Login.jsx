@@ -5,6 +5,8 @@ import { useAuth } from '../hooks/useAuth';
 export default function Login() {
   const { login } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -22,10 +24,10 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] flex flex-col items-center justify-center px-6">
+    <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center px-6 py-10">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-2">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-ink-900 mb-4">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
               <path d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2Z" stroke="white" strokeWidth="1.75" />
@@ -33,11 +35,23 @@ export default function Login() {
               <circle cx="12" cy="12" r="2" fill="white" />
             </svg>
           </div>
-          <h1 className="font-display text-2xl font-medium text-ink-900">Project Echo</h1>
-          <p className="text-sm text-[var(--text-muted)] mt-1 font-mono">Send a message to the person you'll become.</p>
+          <h1 className="font-display text-2xl font-semibold text-ink-900">Welcome back</h1>
+          <p className="text-sm text-[var(--text-muted)] mt-1.5 leading-relaxed">
+            Continue your journey with<br />your future self.
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        {/* Illustration */}
+        <div className="flex justify-center my-2 -mb-2">
+          <img
+            src="/illustrations/mailbox.png"
+            alt=""
+            className="w-44 h-auto select-none pointer-events-none drop-shadow-sm"
+            draggable={false}
+          />
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-3 mt-4">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 animate-fade-in">
               {error}
@@ -46,26 +60,71 @@ export default function Login() {
 
           <div className="space-y-1">
             <label className="section-label">Email</label>
-            <input
-              type="email"
-              className="input-field"
-              placeholder="you@example.com"
-              value={form.email}
-              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              required
-            />
+            <div className="relative">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
+                <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M3 7L10.5 12.5C11.4 13.1667 12.6 13.1667 13.5 12.5L21 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <input
+                type="email"
+                className="input-field pl-11"
+                placeholder="you@example.com"
+                value={form.email}
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                required
+              />
+            </div>
           </div>
 
           <div className="space-y-1">
             <label className="section-label">Password</label>
-            <input
-              type="password"
-              className="input-field"
-              placeholder="••••••••"
-              value={form.password}
-              onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-              required
-            />
+            <div className="relative">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
+                <rect x="4" y="11" width="16" height="9" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M8 11V7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7V11" stroke="currentColor" strokeWidth="1.5" />
+              </svg>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="input-field pl-11 pr-11"
+                placeholder="Enter your password"
+                value={form.password}
+                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(s => !s)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 3L21 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    <path d="M10.6 10.6C10.2206 10.9794 10 11.4892 10 12C10 13.1046 10.8954 14 12 14C12.5108 14 13.0206 13.7794 13.4 13.4M9.36 5.51C10.18 5.18 11.07 5 12 5C16 5 19.27 7.61 21 12C20.62 13.01 20.13 13.93 19.55 14.74M6.5 6.5C4.5 8 3 10 3 12C4.73 16.39 8 19 12 19C13.18 19 14.31 18.78 15.36 18.39" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M2 12C2 12 5 5 12 5C19 5 22 12 22 12C22 12 19 19 12 19C5 19 2 12 2 12Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                    <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-[var(--border)] accent-ink-900"
+              />
+              <span className="text-sm text-[var(--text-secondary)]">Remember me</span>
+            </label>
+            <button type="button" className="text-sm text-warm-700 font-medium hover:text-warm-800 transition-colors">
+              Forgot password?
+            </button>
           </div>
 
           <button type="submit" disabled={loading} className="btn-primary w-full mt-2">

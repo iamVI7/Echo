@@ -1,4 +1,8 @@
 import Echo from '../models/Echo.js';
+import Reflection from '../models/Reflection.js';
+import User from '../models/User.js';
+import path from 'path';
+import fs from 'fs';
 
 export const getProfile = async (req, res) => {
   try {
@@ -19,6 +23,42 @@ export const getProfile = async (req, res) => {
       },
       stats: { total, locked, unlocked, opened }
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * Permanently deletes the authenticated user's account, along with all
+ * their Echoes, Reflections, stored voice recordings, and any pending
+ * QStash unlock notifications.
+ */
+export const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const echoes = await Echo.find({ user: userId });
+
+    for (const echo of echoes) {
+      // Cancel any scheduled unlock email
+      if (echo.qstashMessageId) {
+        await cancelUnlockNotification(echo.qstashMessageId);
+      }
+
+      // Remove stored voice recording file
+      if (echo.voiceUrl) {
+        const filePath = path.join(process.cwd(), echo.voiceUrl);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+    }
+
+    await Echo.deleteMany({ user: userId });
+    await Reflection.deleteMany({ user: userId });
+    await User.findByIdAndDelete(userId);
+
+    res.json({ message: 'Account deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

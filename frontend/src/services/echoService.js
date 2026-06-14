@@ -17,4 +17,5 @@ export const reflectionService = {
 
 export const userService = {
   getProfile: () => api.get('/users/profile').then(r => r.data),
+  deleteAccount: () => api.delete('/users/account').then(r => r.data),
 };

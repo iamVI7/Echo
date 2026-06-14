@@ -1,4 +1,4 @@
-import { format, formatDistanceToNow, isPast, isToday, isTomorrow } from 'date-fns';
+import { format, formatDistanceToNow, isPast } from 'date-fns';
 
 export const formatDate = (date) => {
   return format(new Date(date), 'd MMMM yyyy');
@@ -17,7 +17,7 @@ export const timeUntil = (date) => {
 };
 
 export const isUnlocked = (deliveryDate) => {
-  return isPast(new Date(deliveryDate)) || isToday(new Date(deliveryDate));
+  return isPast(new Date(deliveryDate));
 };
 
 export const getGreeting = () => {

@@ -9,6 +9,8 @@ export default function Profile() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     userService.getProfile()
@@ -18,6 +20,17 @@ export default function Profile() {
   }, []);
 
   const initial = user?.name?.charAt(0).toUpperCase() || '?';
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await userService.deleteAccount();
+      logout();
+    } catch (err) {
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
 
   return (
     <div className="px-5 pt-8 max-w-md mx-auto animate-fade-in">
@@ -48,9 +61,9 @@ export default function Profile() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 items-stretch">
             {/* Total */}
-            <div className="card p-4 flex items-start gap-3">
+            <div className="card p-4 flex items-start gap-3 min-h-[104px]">
               <div className="w-9 h-9 rounded-full bg-ink-50 flex items-center justify-center flex-shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                   <path d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z" stroke="#635847" strokeWidth="1.5" strokeLinejoin="round" />
@@ -61,12 +74,12 @@ export default function Profile() {
               <div>
                 <p className="font-display text-2xl font-semibold text-ink-900 leading-none mb-1">{stats?.total || 0}</p>
                 <p className="text-sm font-medium text-ink-800 leading-tight">Total Echoes</p>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">Keep writing ✦</p>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-snug">Keep writing</p>
               </div>
             </div>
 
             {/* Locked */}
-            <div className="card p-4 flex items-start gap-3">
+            <div className="card p-4 flex items-start gap-3 min-h-[104px]">
               <div className="w-9 h-9 rounded-full bg-warm-100 flex items-center justify-center flex-shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                   <rect x="4" y="11" width="16" height="9" rx="2" stroke="#8f6730" strokeWidth="1.5" />
@@ -77,12 +90,12 @@ export default function Profile() {
               <div>
                 <p className="font-display text-2xl font-semibold text-ink-900 leading-none mb-1">{stats?.locked || 0}</p>
                 <p className="text-sm font-medium text-ink-800 leading-tight">Locked</p>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">Waiting for the right time</p>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-snug">Waiting for the right time</p>
               </div>
             </div>
 
             {/* Ready */}
-            <div className="card p-4 flex items-start gap-3">
+            <div className="card p-4 flex items-start gap-3 min-h-[104px]">
               <div className="w-9 h-9 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                   <circle cx="12" cy="12" r="9" stroke="#4d7c5f" strokeWidth="1.5" />
@@ -92,12 +105,12 @@ export default function Profile() {
               <div>
                 <p className="font-display text-2xl font-semibold text-ink-900 leading-none mb-1">{stats?.unlocked || 0}</p>
                 <p className="text-sm font-medium text-ink-800 leading-tight">Ready</p>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">Open whenever you want</p>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-snug">Open whenever you want</p>
               </div>
             </div>
 
             {/* Opened */}
-            <div className="card p-4 flex items-start gap-3">
+            <div className="card p-4 flex items-start gap-3 min-h-[104px]">
               <div className="w-9 h-9 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                   <rect x="3" y="5" width="18" height="14" rx="2" stroke="#7c5fa6" strokeWidth="1.5" />
@@ -107,7 +120,7 @@ export default function Profile() {
               <div>
                 <p className="font-display text-2xl font-semibold text-ink-900 leading-none mb-1">{stats?.opened || 0}</p>
                 <p className="text-sm font-medium text-ink-800 leading-tight">Opened</p>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5">Memories unlocked</p>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-snug">Memories unlocked</p>
               </div>
             </div>
           </div>
@@ -153,9 +166,21 @@ export default function Profile() {
         </p>
       </div>
 
-      <button onClick={() => setShowLogoutModal(true)} className="btn-secondary w-full text-red-600 border-red-200">
-        Sign out
-      </button>
+      <div className="flex items-center gap-2">
+        <button onClick={() => setShowLogoutModal(true)} className="btn-secondary flex-1 text-red-600 border-red-200">
+          Sign out
+        </button>
+        <button
+          onClick={() => setShowDeleteModal(true)}
+          aria-label="Delete account"
+          className="w-12 h-12 rounded-full bg-[var(--bg-secondary)] border border-[var(--border)] flex items-center justify-center text-red-500 flex-shrink-0 transition-all duration-150 active:scale-[0.95]"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M3 6H21M19 6V20C19 21.1046 18.1046 22 17 22H7C5.89543 22 5 21.1046 5 20V6M8 6V4C8 2.89543 8.89543 2 10 2H14C15.1046 2 16 2.89543 16 4V6"
+              stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
 
       <ConfirmModal
         open={showLogoutModal}
@@ -166,6 +191,18 @@ export default function Profile() {
         destructive
         onConfirm={logout}
         onCancel={() => setShowLogoutModal(false)}
+      />
+
+      <ConfirmModal
+        open={showDeleteModal}
+        title="Delete account?"
+        message="This permanently deletes your account and all sealed Echoes. This cannot be undone."
+        confirmLabel={deleting ? 'Deleting...' : 'Delete account'}
+        cancelLabel="Cancel"
+        destructive
+        loading={deleting}
+        onConfirm={handleDeleteAccount}
+        onCancel={() => setShowDeleteModal(false)}
       />
     </div>
   );

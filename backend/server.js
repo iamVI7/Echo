@@ -25,7 +25,14 @@ app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    // Preserve raw body for QStash signature verification on the deliver webhook
+    if (req.originalUrl.includes('/deliver')) {
+      req.rawBody = buf.toString();
+    }
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 
 // Static files for voice uploads
@@ -47,5 +54,5 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Project Echo server running on port ${PORT}`);
+  console.log(`🔮 Project Echo server running on port ${PORT}`);
 });
