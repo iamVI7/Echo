@@ -21,18 +21,21 @@ const app = express();
 connectDB();
 
 // Middleware
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
+  .split(',')
+  .map(origin => origin.trim());
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (e.g. mobile apps, curl, server-to-server)
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
-app.use(express.json({
-  verify: (req, res, buf) => {
-    // Preserve raw body for QStash signature verification on the deliver webhook
-    if (req.originalUrl.includes('/deliver')) {
-      req.rawBody = buf.toString();
-    }
-  }
-}));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Static files for voice uploads

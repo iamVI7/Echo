@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { echoService, reflectionService } from '../services/echoService';
 import { formatDate, categoryColors, computeStatus, timeUntil } from '../utils/dateUtils';
+import { resolveAssetUrl } from '../utils/urlUtils';
 import ConfirmModal from '../components/ui/ConfirmModal';
 
 export default function EchoDetail() {
@@ -223,7 +224,7 @@ export default function EchoDetail() {
                   </svg>
                   <span className="text-xs font-mono">Voice message</span>
                 </div>
-                <audio controls src={echo.voiceUrl} className="w-full rounded-lg" />
+                <audio controls src={resolveAssetUrl(echo.voiceUrl)} className="w-full rounded-lg" />
               </div>
             )}
           </div>
