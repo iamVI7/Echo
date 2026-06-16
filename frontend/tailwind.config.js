@@ -57,6 +57,10 @@ export default {
         pulseSoft: {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.5' }
+        },
+        shrink: {
+          '0%': { width: '100%' },
+          '100%': { width: '0%' }
         }
       }
     }

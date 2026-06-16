@@ -1,6 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+
+const ERROR_MESSAGES = {
+  'Invalid email or password': {
+    type: 'not_found',
+    message: "We couldn't find an account with those details.",
+    hint: "Not registered yet?"
+  },
+  'default': {
+    type: 'error',
+    message: 'Something went wrong. Please try again.',
+    hint: null
+  }
+};
 
 export default function Login() {
   const { login } = useAuth();
@@ -8,16 +21,38 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
+  const [visible, setVisible] = useState(false);
+  const errorTimerRef = useRef(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 10);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Auto-clear error after 4 seconds
+  useEffect(() => {
+    if (error) {
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = setTimeout(() => setError(null), 4000);
+    }
+    return () => {
+      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+    };
+  }, [error]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError(null);
     try {
       await login(form.email, form.password);
     } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong');
+      const msg = err.response?.data?.message || '';
+      const matched = Object.keys(ERROR_MESSAGES).find(k =>
+        k !== 'default' && msg.toLowerCase().includes(k.toLowerCase())
+      );
+      setError(ERROR_MESSAGES[matched || 'default']);
     } finally {
       setLoading(false);
     }
@@ -25,7 +60,10 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center px-6 py-10">
-      <div className="w-full max-w-sm">
+      <div
+        className="w-full max-w-sm transition-all duration-300"
+        style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(10px)' }}
+      >
         {/* Logo */}
         <div className="text-center mb-2">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-ink-900 mb-4">
@@ -52,9 +90,41 @@ export default function Login() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3 mt-4">
+          {/* Friendly error */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 animate-fade-in">
-              {error}
+            <div className="animate-fade-in">
+              {error.type === 'not_found' ? (
+                <div className="bg-warm-50 border border-warm-200 rounded-xl px-4 py-3 overflow-hidden relative">
+                  <div className="flex items-start gap-3">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 mt-0.5 text-warm-600">
+                      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M12 8V13M12 16V16.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                    <div>
+                      <p className="text-sm text-warm-800">{error.message}</p>
+                      {error.hint && (
+                        <p className="text-xs text-warm-600 mt-1">
+                          {error.hint}{' '}
+                          <Link to="/register" className="font-medium underline underline-offset-2 hover:text-warm-800 transition-colors">
+                            Create an account
+                          </Link>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {/* 4-second countdown bar */}
+                  <div className="absolute bottom-0 left-0 h-0.5 bg-warm-300 rounded-full animate-[shrink_4s_linear_forwards]" style={{ width: '100%' }} />
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 overflow-hidden relative">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-red-500">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                  <p className="text-sm text-red-700">{error.message}</p>
+                  <div className="absolute bottom-0 left-0 h-0.5 bg-red-300 rounded-full animate-[shrink_4s_linear_forwards]" style={{ width: '100%' }} />
+                </div>
+              )}
             </div>
           )}
 

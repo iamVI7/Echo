@@ -1,6 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+
+const ERROR_MESSAGES = {
+  'email already exists': {
+    type: 'exists',
+    message: 'Looks like you already have an account.',
+    hint: 'Want to sign in instead?'
+  },
+  'Email already registered': {
+    type: 'exists',
+    message: 'Looks like you already have an account.',
+    hint: 'Want to sign in instead?'
+  },
+  'default': {
+    type: 'error',
+    message: 'Something went wrong. Please try again.',
+    hint: null
+  }
+};
 
 export default function Register() {
   const { register } = useAuth();
@@ -8,20 +26,31 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 10);
+    return () => clearTimeout(t);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!agreed) {
-      setError('Please agree to the Terms of Service and Privacy Policy');
+      setError({ type: 'error', message: 'Please agree to the Terms of Service and Privacy Policy.', hint: null });
       return;
     }
     setLoading(true);
-    setError('');
+    setError(null);
     try {
       await register(form.name, form.email, form.password);
     } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong');
+      const msg = err.response?.data?.message || 'default';
+      // Match against known messages (case-insensitive)
+      const key = Object.keys(ERROR_MESSAGES).find(k =>
+        k !== 'default' && msg.toLowerCase().includes(k.toLowerCase())
+      );
+      setError(ERROR_MESSAGES[key || 'default']);
     } finally {
       setLoading(false);
     }
@@ -29,7 +58,10 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center px-6 py-10">
-      <div className="w-full max-w-sm">
+      <div
+        className="w-full max-w-sm transition-all duration-300"
+        style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(10px)' }}
+      >
         {/* Logo */}
         <div className="text-center mb-2">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-ink-900 mb-4">
@@ -56,9 +88,36 @@ export default function Register() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3 mt-4">
+          {/* Friendly error */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3 animate-fade-in">
-              {error}
+            <div>
+              {error.type === 'exists' ? (
+                <div className="flex items-start gap-3 bg-warm-50 border border-warm-200 rounded-xl px-4 py-3">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 mt-0.5 text-warm-600">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M12 8V13M12 16V16.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                  <div>
+                    <p className="text-sm text-warm-800">{error.message}</p>
+                    {error.hint && (
+                      <p className="text-xs text-warm-600 mt-1">
+                        {error.hint}{' '}
+                        <Link to="/login" className="font-medium underline underline-offset-2 hover:text-warm-800 transition-colors">
+                          Sign in
+                        </Link>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-red-500">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                  <p className="text-sm text-red-700">{error.message}</p>
+                </div>
+              )}
             </div>
           )}
 
