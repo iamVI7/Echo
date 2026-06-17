@@ -32,9 +32,21 @@ export default function Home() {
     .slice(0, 3);
 
   const firstName = user?.name?.split(' ')[0] || '';
-
   const nextEcho = upcoming[0];
   const totalCount = echoes.length;
+
+  // Surprise Me — pick a random opened Echo
+  const openedEchoes = echoes.filter(e => computeStatus(e) === 'opened');
+  const [surpriseId, setSurpriseId] = useState(null);
+
+  const handleSurpriseMe = () => {
+    if (openedEchoes.length === 0) return;
+    const pool = openedEchoes.filter(e => e._id !== surpriseId);
+    const source = pool.length > 0 ? pool : openedEchoes;
+    const random = source[Math.floor(Math.random() * source.length)];
+    setSurpriseId(random._id);
+    navigate(`/echo/${random._id}`);
+  };
 
   // Momentum: time since the most recently created Echo
   const mostRecent = echoes
@@ -72,23 +84,39 @@ export default function Home() {
         </h1>
       </div>
 
-      {/* Quick create */}
-      <button
-        onClick={() => navigate('/create')}
-        className="w-full card p-5 mb-6 text-left transition-all duration-150 active:scale-[0.98] bg-ink-900 border-ink-900 group"
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-display text-lg text-warm-50 font-medium mb-1">Write to your future self</p>
-            <p className="text-xs font-mono text-warm-200">Create a new Echo →</p>
+      {/* Quick create + Surprise Me */}
+      <div className="flex gap-3 mb-6">
+        <button
+          onClick={() => navigate('/create')}
+          className="flex-1 card p-5 text-left transition-all duration-150 active:scale-[0.98] bg-ink-900 border-ink-900"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-display text-base text-warm-50 font-medium mb-1">Write to your future self</p>
+              <p className="text-xs font-mono text-warm-200">Create a new Echo →</p>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-warm-50/10 flex items-center justify-center flex-shrink-0">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 5V19M5 12H19" stroke="#fdfaf6" strokeWidth="1.75" strokeLinecap="round" />
+              </svg>
+            </div>
           </div>
-          <div className="w-10 h-10 rounded-full bg-warm-50/10 flex items-center justify-center flex-shrink-0">
+        </button>
+
+        {openedEchoes.length > 0 && (
+          <button
+            onClick={handleSurpriseMe}
+            className="card p-4 flex flex-col items-center justify-center gap-1.5 transition-all duration-150 active:scale-[0.97] min-w-[80px]"
+            title="Surprise Me"
+          >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 5V19M5 12H19" stroke="#fdfaf6" strokeWidth="1.75" strokeLinecap="round" />
+              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                stroke="#8f6730" strokeWidth="1.5" strokeLinejoin="round" fill="#8f6730" fillOpacity="0.12" />
             </svg>
-          </div>
-        </div>
-      </button>
+            <span className="text-[10px] font-mono text-[var(--text-muted)] leading-tight text-center">Surprise<br />me</span>
+          </button>
+        )}
+      </div>
 
       {loading ? (
         <div className="space-y-3">

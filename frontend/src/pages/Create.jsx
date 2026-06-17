@@ -4,6 +4,7 @@ import { echoService } from '../services/echoService';
 import VoiceRecorder from '../components/ui/VoiceRecorder';
 import { formatDate } from '../utils/dateUtils';
 import { addDays, addWeeks, addMonths, addYears, format } from 'date-fns';
+import { echoTemplates } from '../utils/templates';
 
 const categories = ['Personal', 'Career', 'Health', 'Learning', 'Project', 'Memory', 'Other'];
 
@@ -47,6 +48,7 @@ export default function Create() {
   const [error, setError] = useState('');
   const [sealed, setSealed] = useState(false);
   const [draftRestored, setDraftRestored] = useState(!!draft);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   const handleVoiceComplete = (blob, duration) => {
     setVoiceBlob(blob);
@@ -94,6 +96,19 @@ export default function Create() {
     setCustomDate('');
     setSelectedOption(null);
     setDraftRestored(false);
+  };
+
+  const handleTemplateSelect = (template) => {
+    if (selectedTemplate?.id === template.id) {
+      // Deselect — clear fields
+      setSelectedTemplate(null);
+      setTextContent('');
+      setCategory('Personal');
+    } else {
+      setSelectedTemplate(template);
+      setTextContent(template.prompt);
+      setCategory(template.category);
+    }
   };
 
   const canProceedStep1 = messageType === 'text'
@@ -234,6 +249,34 @@ export default function Create() {
               Voice
             </button>
           </div>
+
+          {/* Templates — only show for text type */}
+          {messageType === 'text' && (
+            <div className="space-y-2">
+              <label className="section-label">Start from a prompt</label>
+              <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+                {echoTemplates.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => handleTemplateSelect(t)}
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium border transition-all duration-150 ${
+                      selectedTemplate?.id === t.id
+                        ? 'bg-ink-900 text-warm-50 border-ink-900'
+                        : 'bg-white text-ink-700 border-[var(--border)]'
+                    }`}
+                  >
+                    <span>{t.icon}</span>
+                    <span>{t.label}</span>
+                  </button>
+                ))}
+              </div>
+              {selectedTemplate && (
+                <p className="text-xs text-[var(--text-muted)] pl-1">
+                  Prompt loaded — edit freely, it's just a starting point.
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Title */}
           <div className="space-y-1">
