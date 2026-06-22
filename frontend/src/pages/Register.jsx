@@ -87,7 +87,7 @@ export default function Register() {
           />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3 mt-4">
+        <form onSubmit={handleSubmit} className="space-y-3 mt-4 max-w-[88%] mx-auto">
           {/* Friendly error */}
           {error && (
             <div>

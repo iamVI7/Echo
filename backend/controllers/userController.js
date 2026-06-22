@@ -29,9 +29,32 @@ export const getProfile = async (req, res) => {
 };
 
 /**
+ * Updates the authenticated user's display name.
+ */
+export const updateName = async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name?.trim()) {
+      return res.status(400).json({ message: 'Name is required' });
+    }
+    req.user.name = name.trim();
+    await req.user.save();
+    res.json({
+      user: {
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        createdAt: req.user.createdAt
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
  * Permanently deletes the authenticated user's account, along with all
- * their Echoes, Reflections, stored voice recordings, and any pending
- * QStash unlock notifications.
+ * their Echoes, Reflections, and stored voice recordings.
  */
 export const deleteAccount = async (req, res) => {
   try {
@@ -40,11 +63,6 @@ export const deleteAccount = async (req, res) => {
     const echoes = await Echo.find({ user: userId });
 
     for (const echo of echoes) {
-      // Cancel any scheduled unlock email
-      if (echo.qstashMessageId) {
-        await cancelUnlockNotification(echo.qstashMessageId);
-      }
-
       // Remove stored voice recording file
       if (echo.voiceUrl) {
         const filePath = path.join(process.cwd(), echo.voiceUrl);

@@ -2,57 +2,54 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
-const ERROR_MESSAGES = {
-  'Invalid email or password': {
-    type: 'not_found',
-    message: "We couldn't find an account with those details.",
-    hint: "Not registered yet?"
-  },
-  'default': {
-    type: 'error',
-    message: 'Something went wrong. Please try again.',
-    hint: null
-  }
-};
-
 export default function Login() {
   const { login } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); // { type, message, hint }
   const [visible, setVisible] = useState(false);
-  const errorTimerRef = useRef(null);
+  const timerRef = useRef(null);
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 10);
     return () => clearTimeout(t);
   }, []);
 
-  // Auto-clear error after 4 seconds
+  const showError = (type, message, hint = null) => {
+    // Cancel any existing timer
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setError({ type, message, hint });
+    // Auto-dismiss after 4 seconds
+    timerRef.current = setTimeout(() => {
+      setError(null);
+      timerRef.current = null;
+    }, 4000);
+  };
+
   useEffect(() => {
-    if (error) {
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
-      errorTimerRef.current = setTimeout(() => setError(null), 4000);
-    }
     return () => {
-      if (errorTimerRef.current) clearTimeout(errorTimerRef.current);
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [error]);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    if (loading) return;
+    // Clear any existing error and its timer before new attempt
+    if (timerRef.current) clearTimeout(timerRef.current);
     setError(null);
+    setLoading(true);
     try {
       await login(form.email, form.password);
     } catch (err) {
-      const msg = err.response?.data?.message || '';
-      const matched = Object.keys(ERROR_MESSAGES).find(k =>
-        k !== 'default' && msg.toLowerCase().includes(k.toLowerCase())
-      );
-      setError(ERROR_MESSAGES[matched || 'default']);
+      const msg = (err.response?.data?.message || '').toLowerCase();
+      if (msg.includes('invalid email or password') || msg.includes('user not found') || msg.includes('not found')) {
+        showError('not_found', "We couldn't find an account with those details.", "Not registered yet?");
+      } else {
+        showError('error', 'Something went wrong. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -89,44 +86,19 @@ export default function Login() {
           />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3 mt-4">
-          {/* Friendly error */}
-          {error && (
-            <div className="animate-fade-in">
-              {error.type === 'not_found' ? (
-                <div className="bg-warm-50 border border-warm-200 rounded-xl px-4 py-3 overflow-hidden relative">
-                  <div className="flex items-start gap-3">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 mt-0.5 text-warm-600">
-                      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-                      <path d="M12 8V13M12 16V16.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                    <div>
-                      <p className="text-sm text-warm-800">{error.message}</p>
-                      {error.hint && (
-                        <p className="text-xs text-warm-600 mt-1">
-                          {error.hint}{' '}
-                          <Link to="/register" className="font-medium underline underline-offset-2 hover:text-warm-800 transition-colors">
-                            Create an account
-                          </Link>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  {/* 4-second countdown bar */}
-                  <div className="absolute bottom-0 left-0 h-0.5 bg-warm-300 rounded-full animate-[shrink_4s_linear_forwards]" style={{ width: '100%' }} />
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 overflow-hidden relative">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-red-500">
-                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-                    <path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
-                  <p className="text-sm text-red-700">{error.message}</p>
-                  <div className="absolute bottom-0 left-0 h-0.5 bg-red-300 rounded-full animate-[shrink_4s_linear_forwards]" style={{ width: '100%' }} />
-                </div>
-              )}
-            </div>
-          )}
+        <form onSubmit={handleSubmit} className="space-y-3 mt-4 max-w-[88%] mx-auto">
+
+          {/* Error message — rendered outside of loading-dependent re-renders */}
+          <div style={{ minHeight: error ? undefined : 0 }}>
+            {error && (
+              <ErrorBanner
+                key={error.message + Date.now()}
+                type={error.type}
+                message={error.message}
+                hint={error.hint}
+              />
+            )}
+          </div>
 
           <div className="space-y-1">
             <label className="section-label">Email</label>
@@ -209,6 +181,64 @@ export default function Login() {
           </Link>
         </p>
       </div>
+    </div>
+  );
+}
+
+// Isolated component so its own mount/unmount is independent of parent re-renders
+function ErrorBanner({ type, message, hint }) {
+  const [width, setWidth] = useState(100);
+
+  useEffect(() => {
+    // Start shrink animation after mount
+    const raf = requestAnimationFrame(() => {
+      setWidth(0);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  return (
+    <div className={`rounded-xl px-4 py-3 overflow-hidden relative ${
+      type === 'not_found' || type === 'exists'
+        ? 'bg-warm-50 border border-warm-200'
+        : 'bg-red-50 border border-red-200'
+    }`}>
+      <div className="flex items-start gap-3">
+        {type === 'not_found' || type === 'exists' ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 mt-0.5 text-warm-600">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M12 8V13M12 16V16.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 mt-0.5 text-red-500">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M15 9L9 15M9 9L15 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        )}
+        <div>
+          <p className={`text-sm ${type === 'not_found' || type === 'exists' ? 'text-warm-800' : 'text-red-700'}`}>
+            {message}
+          </p>
+          {hint && (
+            <p className="text-xs text-warm-600 mt-1">
+              {hint}{' '}
+              <Link to="/register" className="font-medium underline underline-offset-2 hover:text-warm-800 transition-colors">
+                Create an account
+              </Link>
+            </p>
+          )}
+        </div>
+      </div>
+      {/* Progress bar — shrinks over 4 seconds */}
+      <div
+        className={`absolute bottom-0 left-0 h-0.5 rounded-full transition-all ease-linear ${
+          type === 'not_found' || type === 'exists' ? 'bg-warm-400' : 'bg-red-400'
+        }`}
+        style={{
+          width: `${width}%`,
+          transitionDuration: width === 0 ? '4000ms' : '0ms'
+        }}
+      />
     </div>
   );
 }
